@@ -1306,13 +1306,19 @@ const invState=i=>!i?'gone':i.revoked?'revoked':(i.expiresAt&&i.expiresAt<Date.n
 const activeInv=c=>c.invites.filter(i=>invState(i)==='ok');
 function findInvite(code){const k=String(code||'').trim().toUpperCase();for(const c of DB.calendars){const i=c.invites.find(x=>x.code.toUpperCase()===k);if(i)return{c,i}}return null}
 let pendingInvite=null,inviteError=null;
-function readInviteUrl(){
+async function readInviteUrl(){
   let code=null;try{code=new URLSearchParams(location.search).get('convite')}catch(e){}
-  if(!code)return;const f=findInvite(code);
-  if(!f){inviteError='Este link de convite não existe mais.';return}
-  const st=invState(f.i);
-  if(st!=='ok'){inviteError=st==='revoked'?'Este convite foi cancelado.':'Este convite expirou. Peça um novo link.';return}
-  pendingInvite=f;
+  if(!code)return;
+  const {data,error}=await sb.rpc('check_invite',{p_code:code});
+  if(error||!data?.length||!data[0].valid){
+    const reason=data?.[0]?.reason;
+    inviteError=reason==='revoked'?'Este convite foi cancelado.'
+      :reason==='expired'?'Este convite expirou. Peça um novo link.'
+      :'Este link de convite não existe mais.';
+    return;
+  }
+  const row=data[0];
+  pendingInvite={code,c:{id:row.calendar_id,name:row.calendar_name,members:Array(row.member_count||0).fill({})},i:{code,member_count:row.member_count}};
 }
 function clearInviteUrl(){try{history.replaceState({},'',location.href.split(/[?#]/)[0])}catch(e){}}
 function starterEvents(userId){
@@ -1933,7 +1939,7 @@ document.addEventListener('visibilitychange',()=>{
   else if(!document.body.classList.contains('in-app')&&mockStarted){restartEv();restartResp()}
 });
 (async()=>{
-  readInviteUrl();
+  await readInviteUrl();
   const me=await loadAll();
   if(me){
     let forced=null;
