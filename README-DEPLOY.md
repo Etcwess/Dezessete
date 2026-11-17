@@ -38,7 +38,7 @@ vercel --prod
 1. Abra a URL da Vercel e teste cadastro + login.
 2. Em **Supabase → Authentication → URL Configuration**, adicione a URL da Vercel em:
    - **Site URL**
-   - **Redirect URLs** (inclua `https://SEU-DOMINIO/**`)
+   - **Redirect URLs** (inclua `https://dezessete-weslleyso738-9086s-projects.vercel.app/**`)
 3. Se usar domínio próprio, configure o DNS conforme instruído pela Vercel.
 
 ## Configuração sensível
