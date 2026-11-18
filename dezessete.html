@@ -398,6 +398,12 @@ body.auth-open #landing{display:none!important}
 .cal-row{display:flex;align-items:center;gap:4px}
 .cal-act{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:var(--r-sm);border:1px solid var(--line);color:var(--muted);transition:.2s}
 .cal-act:hover{color:var(--danger);border-color:var(--danger);background:rgba(194,58,58,.06)}
+.cal-rename-btn{width:28px;height:28px;display:grid;place-items:center;border-radius:var(--r-sm);color:var(--muted);transition:.25s var(--ease);flex:none}
+.cal-rename-btn:hover{color:var(--pink);background:rgba(232,86,42,.08)}
+.rename-hint{font-size:14px;color:var(--muted);margin-bottom:16px}
+.rename-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.rename-row .rename-input{flex:1;min-width:0}
+.rename-row .rename-save{flex:none}
 .cal-item{flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 11px;border-radius:var(--r-md);border:1px solid transparent;transition:.28s var(--ease)}
 .cal-item:hover{background:var(--surface)}
 .cal-item.on{border-color:var(--pink);background:rgba(31,48,224,.06)}
@@ -894,6 +900,10 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
   <div class="mhead"><h3 id="dayTitle"></h3><button type="button" class="xbtn" data-close aria-label="Fechar"></button></div>
   <div id="dayList" style="display:flex;flex-direction:column;gap:8px;max-height:54vh;overflow-y:auto"></div>
   <button class="btn btn-solid" id="dayAdd" style="width:100%;margin-top:16px">Novo evento neste dia</button>
+</div></div>
+<div class="modal" id="renameModal" role="dialog" aria-modal="true"><div class="mbox">
+  <div class="mhead"><div><h3>Renomear calendário</h3><p>Você pode renomear apenas os calendários que criou.</p></div><button type="button" class="xbtn" data-close aria-label="Fechar"></button></div>
+  <div id="renameBody"></div>
 </div></div>
 <div class="modal" id="shareModal" role="dialog" aria-modal="true"><div class="mbox wide">
   <div class="mhead"><div><h3>Compartilhar calendário</h3><p id="shareSub"></p></div><button type="button" class="xbtn" data-close aria-label="Fechar"></button></div>
@@ -1635,7 +1645,8 @@ function renderUserPop(){
 }
 function renderCalPop(){
   const mine=myCals();
-  $('#calPop').innerHTML=`<div class="pop-head" style="border:none;padding:6px 8px 10px"><span>Seus calendários</span></div>`+
+  const owned=mine.filter(c=>c.ownerId===ME.id);
+  $('#calPop').innerHTML=`<div class="pop-head" style="border:none;padding:6px 8px 10px"><span>Seus calendários</span>${owned.length?`<button class="cal-rename-btn" id="openRename" title="Renomear calendário">${ic('edit',16)}</button>`:''}</div>`+
     mine.map(c=>{
       const onlyYou=c.members.length===1;
       const notOwner=c.ownerId!==ME.id;
@@ -1653,6 +1664,21 @@ function renderCalPop(){
   $$('#calPop [data-remove]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeCalendar(b.dataset.remove);renderCalPop()});
   $('#createCal').onclick=createCal;
   $('#newCalName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();createCal()}};
+  const rb=$('#openRename');if(rb)rb.onclick=()=>openRenameModal(owned);
+}
+function openRenameModal(owned){
+  const list=owned.map(c=>`<div class="rename-row" data-id="${c.id}">
+    <input class="inp rename-input" value="${esc(c.name)}" maxlength="60" aria-label="Nome do calendário">
+    <button class="btn btn-solid btn-sm rename-save">Salvar</button>
+  </div>`).join('');
+  $('#renameBody').innerHTML=`<p class="rename-hint">Escolha o calendário que você criou e digite o novo nome.</p>${list}`;
+  $('#renameModal').classList.add('on');syncScrim();
+  $$('#renameBody .rename-save').forEach(btn=>btn.onclick=async()=>{
+    const row=btn.closest('.rename-row'),name=row.querySelector('.rename-input').value.trim();
+    const {error}=await sb.rpc('rename_calendar',{p_calendar_id:row.dataset.id,p_name:name});
+    if(error){toast(error.message,'bad');return}
+    await loadAll();renderApp();toast('Calendário renomeado.','ok');
+  });
 }
 async function createCal(){
   const n=($('#newCalName').value||'').trim();
@@ -1862,10 +1888,10 @@ $('#inviteList').addEventListener('click',async e=>{
 /* ============ overlays genéricos ============ */
 const scrim=$('#scrim');
 function syncScrim(){
-  const on=$('#drawer').classList.contains('open')||['#editorModal','#dayModal','#shareModal'].some(s=>$(s).classList.contains('on'));
+  const on=$('#drawer').classList.contains('open')||['#editorModal','#dayModal','#renameModal','#shareModal'].some(s=>$(s).classList.contains('on'));
   scrim.classList.toggle('on',on);
 }
-function closeModals(){['#editorModal','#dayModal','#shareModal'].forEach(s=>$(s).classList.remove('on'));syncScrim()}
+function closeModals(){['#editorModal','#dayModal','#renameModal','#shareModal'].forEach(s=>$(s).classList.remove('on'));syncScrim()}
 function closeAll(){closeModals();closeDrawer();S.ui={notif:false,user:false,cal:false};S.yearOpen=false;['#notifPop','#userPop','#calPop','#yearPop'].forEach(s=>{const el=$(s);if(el)el.hidden=true})}
 scrim.onclick=()=>closeAll();
 async function logout(){
@@ -1967,7 +1993,7 @@ $('#calIc').innerHTML=ic('cal',17);$('#shareIc').innerHTML=ic('share',19);$('#be
 $('#plusIc').innerHTML=ic('plus',17);$('#sideShareIc').innerHTML=ic('link',20);$('#sideShareChev').innerHTML=ic('chev',16);
 $('#mtChev').innerHTML=ic('chev',16);$('#upChev').innerHTML=ic('chev',16);
 $$('[data-ic]').forEach(s=>s.innerHTML=ic(s.dataset.ic,16));
-$$('#eventForm [data-close], #dayModal [data-close], #shareModal [data-close]').forEach(b=>b.innerHTML=ic('close',18));
+$$('#eventForm [data-close], #dayModal [data-close], #renameModal [data-close], #shareModal [data-close]').forEach(b=>b.innerHTML=ic('close',18));
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){clearInterval(evTimer);clearInterval(respTimer)}
   else if(!document.body.classList.contains('in-app')&&mockStarted){restartEv();restartResp()}
