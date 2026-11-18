@@ -942,6 +942,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
     <li><b>Agora é app</b><span>Instale na tela inicial do celular ou abra direto no navegador.</span></li>
     <li><b>Renomeie seus calendários</b><span>Use o botão de caneta no painel Meus calendários.</span></li>
     <li><b>Convites por link melhorados</b><span>Entre direto no calendário de outra pessoa ao criar sua conta.</span></li>
+    <li><b>Modo escuro e claro</b><span>Alterne o tema pelo botão no painel da sua conta.</span></li>
   </ul>
   <button class="btn btn-solid news-close" id="newsClose">Fechar</button>
 </div></div>
@@ -2113,7 +2114,7 @@ function setTheme(dark,origin){
   )).catch(()=>{})}catch(e){}
 }
 
-const NEWS_KEY='dez.news.seen.v1';
+const NEWS_KEY='dez.news.seen.v2';
 function showNews(){
   if(localStorage.getItem(NEWS_KEY))return;
   localStorage.setItem(NEWS_KEY,'1');
