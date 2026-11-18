@@ -585,8 +585,9 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
 @media (max-width:1180px){
   .a-shell{grid-template-columns:1fr}.side{order:2}
   .months{flex-direction:row;overflow-x:auto;padding-bottom:6px}.mtab{min-width:128px}
-  .how-grid{grid-template-columns:1fr}.how-sticky{position:static}
-  .step-nav{flex-direction:row;overflow-x:auto;padding-bottom:6px}.step-dot{min-width:170px}
+  .how-grid{grid-template-columns:minmax(0,1fr)}.how-sticky{position:static;min-width:0}
+  .steps,.step{min-width:0}
+  .step-nav{flex-direction:row;overflow-x:auto;padding-bottom:6px;max-width:100%}.step-dot{min-width:170px}
 }
 @media (max-width:940px){
   .mock{grid-template-columns:1fr}
@@ -604,15 +605,20 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
 }
 @media (max-width:640px){
   :root{--nav:66px;--cell:96px}
-  .hero{padding-top:calc(var(--nav) + 40px)}
+  .bg-aurora{inset:0 auto auto 0;width:100%;height:70vh}
+  .hero{padding-top:calc(var(--nav) + 28px);padding-bottom:48px;gap:22px}
+  .mock{margin-top:32px}
+  .mock-cal{padding:14px}
+  .mock-card{padding:14px;margin-top:10px}
+  .mc-title{font-size:20px}
   .hero-cta .btn{flex:1;min-width:170px}
-  .mcell{height:48px;padding:3px}.mnum{font-size:13px}
+  .mcell{height:42px;padding:3px}.mnum{font-size:13px}
   .mchip{font-size:13px;padding:2px 3px}
   .mock-head .stack{gap:4px}.mock-head .stack .av{width:20px!important;height:20px!important;font-size:13px!important}
   .day{padding:6px}.day-num{font-size:13px}
   .echip{font-size:13px;padding:3px 5px}.echip .tm{display:none}
   .weekdays div{font-size:13px;padding:4px}
-  .cal-grid,.weekdays,.mock-grid,.mock-wd{gap:5px}
+  .cal-grid,.weekdays,.mock-grid,.mock-wd{gap:4px}
   .feat-grid{grid-template-columns:1fr}
   .row{flex-wrap:wrap}.row-counts{display:none}
   .fgrid{grid-template-columns:1fr}
@@ -625,6 +631,34 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
   .swatches{gap:5px}
   .rk-board{--rkstep:58px;padding:10px 16px}
   .rk-row{left:16px;right:16px}
+}
+@media (max-width:380px){
+  .nav-right{gap:6px}
+  .nav-right .btn-ghost{display:none}
+  .nav-right .btn-solid{height:38px;padding:0 12px;font-size:13px}
+  .nav-burger{width:38px;height:38px}
+  .a-top{padding:8px 10px;flex-wrap:nowrap;gap:6px}
+  .a-actions{flex-wrap:nowrap;gap:4px}
+  .a-top .wordmark{font-size:19px}
+  .cal-btn{max-width:90px;padding:0 8px}
+  .btn-icon{width:38px;height:38px}
+  #newBtn{width:38px;padding:0;font-size:0;gap:0}
+  #newBtn svg{width:19px;height:19px}
+  .a-head{padding-top:104px}
+  .hero h1{font-size:34px}
+  .hero-sub{font-size:15px}
+  .cta-box{padding:30px 16px}
+  .cta h2{font-size:26px}
+  .cta-people{gap:8px;padding:12px 14px}
+  .mcell{height:38px;padding:2px}
+  .mnum{font-size:12px}
+  .mock-card{padding:12px}
+  .mc-title{font-size:18px}
+  .auth-card{padding:18px 16px}
+  .rk-board{--rkstep:52px;padding:10px 12px}
+  .rk-row{left:12px;right:12px;gap:10px}
+  .rk-pos{font-size:20px;width:40px}
+  .rk-name{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}html{scroll-behavior:auto}.bg-aurora{animation:none;transform:none}}
 </style>
