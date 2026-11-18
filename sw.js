@@ -1,5 +1,5 @@
 /* Service worker do Dezessete — cache do shell da aplicação */
-const CACHE = 'dezessete-v1';
+const CACHE = 'dezessete-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -31,6 +31,21 @@ self.addEventListener('fetch', (event) => {
   // Nunca cachear chamadas ao Supabase (dados dos usuários)
   if (url.hostname.includes('supabase.co')) return;
 
+  // Navegações: sempre buscar da rede primeiro, para entregar atualizações.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put('/index.html', copy));
+        }
+        return res;
+      }).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Assets: cache-first, com atualizacao em segundo plano.
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req).then((res) => {
