@@ -1496,9 +1496,11 @@ async function doSignup(ev){
   if(!calId){
     const {data:d,error:e}=await sb.rpc('create_calendar',{
       p_name:`Calendário de ${name.split(' ')[0]}`,p_color:signupColor,p_with_starter:true});
-    if(!e)calId=d;
+    if(!e&&d)calId=d;
   }
   await loadAll();
+  // Se ainda sem id, reaproveita o primeiro calendario existente em vez de criar outro.
+  if(!calId)calId=myCals()[0]?.id||null;
   hideAuth();enterApp(calId||undefined);
   toast(`Bem-vindo, ${name.split(' ')[0]}!`,'ok');
 }
@@ -1905,12 +1907,14 @@ function startLandingTimers(){if(mockStarted){restartEv();restartResp()}
   clearInterval(visTimer);if(!reduce){const seq=['maybe','no','yes'];let k=0;visTimer=setInterval(()=>{if(document.body.classList.contains('in-app')||$('#authPage').classList.contains('on'))return;visSlide.set(seq[k%3],true);k++},3000)}}
 async function enterApp(calId){
   if(!ME)return;
-  const mine=myCals();
-  if(!mine.length){
+  let mine=myCals();
+  // Se o chamador ja passou um calendario valido, nunca criar outro.
+  if(!calId&&!mine.length){
     const {data}=await sb.rpc('create_calendar',{p_name:`Calendário de ${ME.name.split(' ')[0]}`,p_color:ME.color,p_with_starter:true});
+    if(data)calId=data;
     await loadAll();mine=myCals();
   }
-  S.calId=calId&&mine.some(c=>c.id===calId)?calId:mine[0].id;
+  S.calId=calId||mine[0]?.id||null;
   S.month={y:CY,m:CM};S.selected.clear();S.drawerId=null;S.monthsOpen=false;S.upOpen=false;
   landing.hidden=true;$('#app').hidden=false;intro.hidden=true;
   authPage.classList.remove('on');stopRank();
