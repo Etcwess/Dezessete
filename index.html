@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#e8562a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dezessete">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="color-scheme" content="light">
 <title>Dezessete — calendário compartilhado para combinar rolês</title>
 <meta name="description" content="Compartilhe um calendário com a turma. Cada pessoa tem uma cor, responde In, Pensando ou Não e comenta em cada rolê.">
@@ -316,7 +322,9 @@ footer{border-top:1px solid var(--line);padding:44px 0 40px;background:var(--sur
 .foot-links{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
 .foot-links a,.foot-links button{font-size:14px;color:var(--muted);transition:.35s var(--ease);display:inline-flex;align-items:center;gap:7px}
 .foot-links a:hover,.foot-links button:hover{color:var(--pink)}
-.foot-note{font-size:13px;color:var(--dim);margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:center}
+.foot-note{font-size:13px;color:var(--dim);margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:18px;flex-wrap:wrap}
+.install-btn{border:1px solid var(--line2);border-radius:var(--r-pill);padding:8px 16px;color:var(--text);font-size:13px;font-weight:600;transition:.3s var(--ease)}
+.install-btn:hover{border-color:var(--pink);color:var(--pink)}
 
 /* ---------- página de auth ---------- */
 .authpage{position:fixed;inset:0;z-index:120;overflow-y:auto;background:transparent;opacity:0;pointer-events:none;transition:opacity .45s var(--ease)}
@@ -811,7 +819,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
     <div class="foot"><a href="#top" class="wordmark" style="font-size:26px">Dezessete</a>
       <div class="foot-links"><a href="#como">Como funciona</a><a href="#recursos">Recursos</a><a href="#preview">Por dentro</a><button id="replayIntro">Rever abertura</button></div>
     </div>
-    <div class="foot-note"><span>© <span id="year"></span> Dezessete</span></div>
+    <div class="foot-note"><span>© <span id="year"></span> Dezessete</span><button class="install-btn" id="installBtn">Abrir o Dezessete</button></div>
   </div></footer>
 </div>
 
@@ -1639,6 +1647,7 @@ function renderUserPop(){
   </div>
   <div style="padding:0 16px 16px;display:grid;gap:8px">
     <button class="btn btn-ghost btn-sm" id="popShare">${ic('share',15)} Compartilhar</button>
+    <button class="btn btn-ghost btn-sm" id="popInstall">${ic('download',15)} Abrir como app</button>
     <button class="btn btn-ghost btn-sm" id="popOut">${ic('logout',15)} Sair da conta</button>
   </div>`;
   $('#userPop').hidden=!S.ui.user;
@@ -2002,6 +2011,34 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden){clearInterval(evTimer);clearInterval(respTimer)}
   else if(!document.body.classList.contains('in-app')&&mockStarted){restartEv();restartResp()}
 });
+/* ============ PWA: instalar / abrir ============ */
+let deferredPrompt=null;
+const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;updateInstallButtons()});
+function updateInstallButtons(){
+  const label=isMobile?'Instalar app':'Abrir no navegador';
+  ['#installBtn','#popInstall'].forEach(s=>{const b=$(s);if(b)b.textContent=label});
+}
+function installApp(){
+  if(isMobile&&deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{deferredPrompt=null;updateInstallButtons()});
+  }else if(isMobile){
+    toast('No iPhone/iPad: toque em Compartilhar e depois em “Adicionar à Tela de Início”.','ok');
+  }else{
+    window.open(location.href.split(/[?#]/)[0],'_blank','noopener');
+  }
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#installBtn')||e.target.closest('#popInstall')){
+    e.preventDefault();S.ui.user=false;renderUserPop();installApp();
+  }
+});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+updateInstallButtons();
+
 (async()=>{
   await readInviteUrl();
   const me=await loadAll();
