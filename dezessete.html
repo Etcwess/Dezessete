@@ -412,6 +412,15 @@ body.auth-open #landing{display:none!important}
 .rename-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
 .rename-row .rename-input{flex:1;min-width:0}
 .rename-row .rename-save{flex:none}
+.news-card{background:#fff;border:1px solid var(--line2);border-radius:var(--r-lg);padding:clamp(26px,4vw,40px);max-width:520px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.16)}
+.news-card h3{font-family:var(--brand);font-size:26px;font-weight:600;letter-spacing:var(--track-h2);margin:0 0 6px}
+.news-sub{font-size:14px;color:var(--muted);margin:0 0 24px;line-height:1.5}
+.news-list{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:18px}
+.news-list li{font-size:15px;line-height:1.55;color:var(--text);border-bottom:1px solid var(--line);padding-bottom:16px}
+.news-list li:last-child{border-bottom:none;padding-bottom:0}
+.news-list b{display:block;font-weight:600;margin-bottom:3px}
+.news-list span{color:var(--muted);font-size:14px}
+.news-close{width:100%;height:48px}
 .cal-item{flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 11px;border-radius:var(--r-md);border:1px solid transparent;transition:.28s var(--ease)}
 .cal-item:hover{background:var(--surface)}
 .cal-item.on{border-color:var(--pink);background:rgba(232,86,42,.06)}
@@ -908,6 +917,16 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
   <div class="mhead"><h3 id="dayTitle"></h3><button type="button" class="xbtn" data-close aria-label="Fechar"></button></div>
   <div id="dayList" style="display:flex;flex-direction:column;gap:8px;max-height:54vh;overflow-y:auto"></div>
   <button class="btn btn-solid" id="dayAdd" style="width:100%;margin-top:16px">Novo evento neste dia</button>
+</div></div>
+<div class="modal" id="newsModal" role="dialog" aria-modal="true"><div class="news-card">
+  <h3>Novidades</h3>
+  <p class="news-sub">Luana liberou antes.... MAS atualizei</p>
+  <ul class="news-list">
+    <li><b>Agora é app</b><span>Instale na tela inicial do celular ou abra direto no navegador.</span></li>
+    <li><b>Renomeie seus calendários</b><span>Use o botão de caneta no painel Meus calendários.</span></li>
+    <li><b>Convites por link melhorados</b><span>Entre direto no calendário de outra pessoa ao criar sua conta.</span></li>
+  </ul>
+  <button class="btn btn-solid news-close" id="newsClose">Fechar</button>
 </div></div>
 <div class="modal" id="renameModal" role="dialog" aria-modal="true"><div class="mbox">
   <div class="mhead"><div><h3>Renomear calendário</h3><p>Você pode renomear apenas os calendários que criou.</p></div><button type="button" class="xbtn" data-close aria-label="Fechar"></button></div>
@@ -1899,10 +1918,10 @@ $('#inviteList').addEventListener('click',async e=>{
 /* ============ overlays genéricos ============ */
 const scrim=$('#scrim');
 function syncScrim(){
-  const on=$('#drawer').classList.contains('open')||['#editorModal','#dayModal','#renameModal','#shareModal'].some(s=>$(s).classList.contains('on'));
+  const on=$('#drawer').classList.contains('open')||['#editorModal','#dayModal','#renameModal','#newsModal','#shareModal'].some(s=>$(s).classList.contains('on'));
   scrim.classList.toggle('on',on);
 }
-function closeModals(){['#editorModal','#dayModal','#renameModal','#shareModal'].forEach(s=>$(s).classList.remove('on'));syncScrim()}
+function closeModals(){['#editorModal','#dayModal','#renameModal','#newsModal','#shareModal'].forEach(s=>$(s).classList.remove('on'));syncScrim()}
 function closeAll(){closeModals();closeDrawer();S.ui={notif:false,user:false,cal:false};S.yearOpen=false;['#notifPop','#userPop','#calPop','#yearPop'].forEach(s=>{const el=$(s);if(el)el.hidden=true})}
 scrim.onclick=()=>closeAll();
 async function logout(){
@@ -2038,6 +2057,16 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
   addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
 updateInstallButtons();
+
+const NEWS_KEY='dez.news.seen.v1';
+function showNews(){
+  if(localStorage.getItem(NEWS_KEY))return;
+  localStorage.setItem(NEWS_KEY,'1');
+  $('#newsModal').classList.add('on');syncScrim();
+  const close=()=>{closeModals()};
+  $('#newsClose').onclick=close;
+}
+showNews();
 
 (async()=>{
   await readInviteUrl();
