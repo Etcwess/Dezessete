@@ -205,7 +205,7 @@ body.ready .stg{animation:stgIn .9s var(--ease) forwards}
 .mock-calname{font-size:13px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:7px}
 .mock-wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:6px}
 .mock-wd div{font-size:13px;font-weight:600;color:var(--dim);text-align:center;padding:3px 0}
-.mock-wd div:nth-child(n+6){color:var(--orange)}
+.mock-wd div:first-child,.mock-wd div:last-child{color:var(--orange)}
 .mock-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .mcell{height:60px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);padding:5px;display:flex;flex-direction:column;gap:3px;overflow:hidden;transition:.4s var(--ease)}
 .mcell.blank{opacity:.3}
@@ -452,7 +452,7 @@ body.auth-open #landing{display:none!important}
 .cal-empty b{color:var(--text)}
 .weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:8px}
 .weekdays div{font-size:13px;color:var(--dim);padding:5px 9px;font-weight:600;overflow:hidden}
-.weekdays div:nth-child(n+6){color:var(--orange)}
+.weekdays div:first-child,.weekdays div:last-child{color:var(--orange)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .day{position:relative;height:var(--cell);min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:9px;display:flex;flex-direction:column;gap:5px;overflow:hidden;cursor:pointer;transition:.35s var(--ease);animation:cellIn .35s ease-out both}
 @keyframes cellIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -955,7 +955,7 @@ const CREW=[
   {n:'João',c:'#5A6310'},{n:'Tati',c:'#0A9E6B'},{n:'Pedro',c:'#B07500'},{n:'Vini',c:'#4F5C14'},{n:'Lu',c:'#C62828'}];
 const COLORS20=['#C2185B','#B5476E','#EFA9C6','#A3154A','#7A5A15','#9A8438','#5A6310','#D98A00','#E8B44A','#B07500','#00865A','#4FBF94','#0A9E6B','#5E6B12','#8C9438','#4F5C14','#D9482B','#E87A5B','#B5331B','#C62828'];
 const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const WD=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+const WD=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 const TYPES={festa:{l:'Festa',c:'#C2185B'},show:{l:'Show',c:'#7A5A15'},aniversario:{l:'Aniversário',c:'#D98A00'},reuniao:{l:'Reunião',c:'#5E6B12'},beber:{l:'Beber',c:'#D9482B'}};
 const RK=['yes','maybe','no'],RC={yes:'#00865A',maybe:'#D98A00',no:'#C62828'},RL={yes:'In',maybe:'Pensando...',no:'Dessa vez não'};
 const DEMO_EVENTS=[
@@ -987,7 +987,7 @@ const ds=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
 const pd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const today=ds(CY,CM,CD);
 const human=s=>{const d=pd(s);return`${pad(d.getDate())} ${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()}`};
-const wdOf=s=>WD[(pd(s).getDay()+6)%7];
+const wdOf=s=>WD[pd(s).getDay()];
 const ago=t=>{const s=(Date.now()-t)/1e3;if(s<60)return'agora';if(s<3600)return`${s/60|0} min`;if(s<86400)return`${s/3600|0} h`;return`${s/86400|0} d`};
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const WAAPI=typeof Element!=='undefined'&&!!Element.prototype.animate;
@@ -1154,7 +1154,7 @@ function buildMockGrid(){
   $('#mockMonth').innerHTML=`${MONTHS[CM]}<span>${CY}</span>`;
   $('#mockWd').innerHTML=WD.map(w=>`<div>${w}</div>`).join('');
   $('#mockAvatars').innerHTML=CREW.slice(0,6).map(m=>av(m,25)).join('')+`<span class="av" style="width:25px;height:25px;font-size:9px;color:var(--muted);border-color:var(--line2);background:rgba(255,255,255,.06)">+11</span>`;
-  const off=(new Date(CY,CM,1).getDay()+6)%7,tot=dim(CY,CM),by={};
+  const off=new Date(CY,CM,1).getDay(),tot=dim(CY,CM),by={};
   LEVENTS.forEach(e=>{(by[e.day]??=[]).push(e)});
   let h='';for(let i=0;i<off;i++)h+='<div class="mcell blank"></div>';
   for(let d=1;d<=tot;d++){const es=by[d]||[];h+=`<div class="mcell ${d===CD?'today':''}" data-day="${d}"><span class="mnum">${d}</span>${es.map(e=>{const m=CREW[e.by];return`<div class="mchip" data-ev="${e.id}" style="color:${m.c};border-left-color:${m.c};background:${hexA(m.c,.16)}">${esc(e.title)}</div>`}).join('')}</div>`}
@@ -1224,7 +1224,7 @@ function lpGroups(e){
   return{html:grp(g,'IN','var(--green)')+grp(t,'PENSANDO...','var(--amber)')+grp(o,'DESSA VEZ NÃO','var(--danger)'),n:g.length};
 }
 function renderPrevList(){
-  $('#prevList').innerHTML=LEVENTS.map((e,i)=>{const m=CREW[e.by];return`<button class="pitem ${i===LP.sel?'on':''}" data-pi="${i}" style="border-left-color:${m.c};color:${m.c}"><span class="pi-date"><b>${pad(e.day)}</b><span>${WD[(new Date(CY,CM,e.day).getDay()+6)%7]}</span></span><span class="pi-main"><h4>${esc(e.title)}</h4><p>${e.time} · ${esc(e.loc)} · ${esc(m.n)}</p></span><span class="pi-count">${lpGroups(e).n} in</span></button>`}).join('');
+  $('#prevList').innerHTML=LEVENTS.map((e,i)=>{const m=CREW[e.by];return`<button class="pitem ${i===LP.sel?'on':''}" data-pi="${i}" style="border-left-color:${m.c};color:${m.c}"><span class="pi-date"><b>${pad(e.day)}</b><span>${WD[new Date(CY,CM,e.day).getDay()]}</span></span><span class="pi-main"><h4>${esc(e.title)}</h4><p>${e.time} · ${esc(e.loc)} · ${esc(m.n)}</p></span><span class="pi-count">${lpGroups(e).n} in</span></button>`}).join('');
   $$('#prevList .pitem').forEach(b=>b.onclick=()=>{LP.sel=+b.dataset.pi;renderPrevList();renderPrevDetail()});
 }
 function renderPrevDetail(){
@@ -1530,7 +1530,7 @@ function renderMonths(){
 function renderMain(anim){$('#mesView').hidden=S.view!=='mes';$('#listaView').hidden=S.view!=='lista';S.view==='mes'?renderGrid(anim):renderList()}
 function renderGrid(anim){
   const{y,m}=S.month;$('#weekdays').innerHTML=WD.map(w=>`<div>${w}</div>`).join('');
-  const off=(new Date(y,m,1).getDay()+6)%7,tot=dim(y,m),by={};
+  const off=new Date(y,m,1).getDay(),tot=dim(y,m),by={};
   monthEvents(y,m).forEach(e=>(by[e.date]??=[]).push(e));
   Object.values(by).forEach(a=>a.sort((x,z)=>x.time.localeCompare(z.time)));
   let h='';for(let i=0;i<off;i++)h+='<div class="day blank"></div>';
