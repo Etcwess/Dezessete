@@ -1691,7 +1691,7 @@ function buildDrawer(){
       <div class="cmts" id="dwCmts">${e.comments.length?e.comments.map(cm=>{const u=person(cm.by);return`<div class="cmt">${av(u,26)}<div class="cmt-b"><div class="cmt-h"><b style="color:${u.c}">${esc(u.full)}</b><time>${ago(cm.ts)}</time></div><p>${esc(cm.text)}</p></div></div>`}).join(''):`<div style="color:var(--dim);font-size:13px;padding:6px 2px">Nenhum comentário ainda. Puxe o assunto.</div>`}</div>
       <form class="cmt-form" id="dwForm"><input class="inp" id="dwInput" maxlength="280" placeholder="Escreva algo sobre o rolê…" autocomplete="off"><button class="cmt-send" type="submit">${ic('send',17)}</button></form>
     </div>`;
-  $('#dwFoot').innerHTML=`${canEdit(e)?`<button class="btn btn-ghost btn-sm" id="dwEdit">${ic('edit',15)} Editar</button>`:''}<button class="btn btn-ghost btn-sm" id="dwAddCal">${ic('cal',15)} Adicionar à agenda</button><button class="btn btn-ghost btn-sm" id="dwIcs" title="Baixar arquivo .ics" aria-label="Baixar arquivo .ics" style="padding:0 11px">${ic('download',15)}</button>${canEdit(e)?`<button class="btn btn-danger btn-sm" id="dwDel" style="margin-left:auto">${ic('trash',15)} Excluir</button>`:''}`;
+  $('#dwFoot').innerHTML=`${canEdit(e)?`<button class="btn btn-ghost btn-sm" id="dwEdit">${ic('edit',15)} Editar</button>`:''}<button class="btn btn-ghost btn-sm" id="dwAddCal">${ic('cal',15)} Adicionar à agenda</button>${canEdit(e)?`<button class="btn btn-danger btn-sm" id="dwDel" style="margin-left:auto">${ic('trash',15)} Excluir</button>`:''}`;
   dwSlide=new SlideSelect($('#dwSlide'),v=>setRSVP(e.id,v));
   dwSlide.set(e.rsvps[ME.id]||'yes',false);
   dwSlide.thumb.style.opacity=e.rsvps[ME.id]?'1':'.35';
@@ -1707,7 +1707,6 @@ function buildDrawer(){
   const ed=$('#dwEdit');if(ed)ed.onclick=()=>openEditor(e);
   const dl=$('#dwDel');if(dl)dl.onclick=()=>deleteEvents([e.id]);
   $('#dwAddCal').onclick=()=>addToCalendar(e.id);
-  $('#dwIcs').onclick=()=>downloadICS(e.id);
 }
 function closeDrawer(){if(dwSlide){dwSlide.destroy();dwSlide=null}S.drawerId=null;$('#drawer').classList.remove('open');syncScrim()}
 
@@ -1766,7 +1765,6 @@ function openDay(key){
 }
 $('#dayAdd').onclick=e=>{const d=e.currentTarget.dataset.date;closeModals();openEditor(null,d)};
 const icsStamp=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-const icsSlug=t=>String(t||'evento').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'evento';
 function icsEvent(e){
   const[h,mi]=e.time.split(':').map(Number),st=pd(e.date);st.setHours(h,mi);
   const en=new Date(st.getTime()+3*36e5);
@@ -1781,19 +1779,11 @@ function icsEvent(e){
   const fold=s=>{let out='',len=0;for(const ch of s){const n=enc.encode(ch).length;if(len+n>74){out+='\r\n ';len=1}out+=ch;len+=n}return out};
   return lines.map(fold).join('\r\n');
 }
-function downloadICS(id){
-  const e=evById(id);if(!e)return;
-  const url=URL.createObjectURL(new Blob([icsEvent(e)],{type:'text/calendar;charset=utf-8'}));
-  const a=document.createElement('a');a.href=url;a.download=icsSlug(e.title)+'.ics';
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),60000);toast('Arquivo .ics baixado.','ok');
-}
 function addToCalendar(id){
   const e=evById(id);if(!e)return;
   if(isIOS){
     const url=URL.createObjectURL(new Blob([icsEvent(e)],{type:'text/calendar;charset=utf-8'}));
-    const w=window.open(url,'_blank');
-    if(!w){const a=document.createElement('a');a.href=url;a.download=icsSlug(e.title)+'.ics';a.click()}
+    window.open(url,'_blank');
     setTimeout(()=>URL.revokeObjectURL(url),60000);
     return;
   }
