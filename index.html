@@ -849,6 +849,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--pink);cursor:poin
       <div class="head-nav">
         <button class="btn btn-ghost btn-sm" id="todayBtn">Hoje</button>
         <div class="seg" id="viewSeg"><button data-view="mes" class="on"><span data-ic="cal"></span>Mês</button><button data-view="lista"><span data-ic="list"></span>Lista</button></div>
+        <button class="btn btn-ghost btn-sm" id="addMonthBtn" title="Adicionar os rolês deste mês à sua agenda"><span data-ic="cal"></span> Adicionar mês à agenda</button>
       </div>
       <div class="cal-empty" id="calEmpty" hidden><p><b>Este calendário ainda está vazio.</b> Crie o primeiro rolê ou mande o link pra turma.</p><button class="btn btn-ghost btn-sm" id="emptyShare">Convidar</button><button class="btn btn-solid btn-sm" id="emptyNew">Criar rolê</button></div>
       <div class="toolbar"><div id="filters" style="display:flex;gap:8px;flex-wrap:wrap"></div><div class="spacer"></div>
@@ -1506,6 +1507,7 @@ function renderHead(){
   const mine=l.filter(e=>e.rsvps[ME.id]==='yes').length,pend=l.filter(e=>!e.rsvps[ME.id]).length;
   $('#aStats').textContent=`${l.length} evento${l.length!==1?'s':''} · ${mine} confirmados por você · ${pend} aguardando resposta`;
   $$('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===S.view));
+  $('#addMonthBtn').disabled=l.length===0;
   $('#sortWrap').hidden=S.view!=='lista';$('#sortSel').value=S.sort;
 }
 function renderFilters(){
@@ -1765,20 +1767,26 @@ function openDay(key){
 }
 $('#dayAdd').onclick=e=>{const d=e.currentTarget.dataset.date;closeModals();openEditor(null,d)};
 const icsStamp=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-function icsEvent(e){
-  const[h,mi]=e.time.split(':').map(Number),st=pd(e.date);st.setHours(h,mi);
+const icsEnc=new TextEncoder();
+const icsFold=s=>{let out='',len=0;for(const ch of s){const n=icsEnc.encode(ch).length;if(len+n>74){out+='\r\n ';len=1}out+=ch;len+=n}return out};
+const icsText=s=>String(s||'').replace(/\\/g,'\\\\').replace(/([,;])/g,'\\$1').replace(/\r?\n/g,'\\n');
+function icsVEvent(e){
+  const[h,mi]=String(e.time||'20:00').split(':').map(Number),st=pd(e.date);st.setHours(h,mi||0);
   const en=new Date(st.getTime()+3*36e5);
-  const cl=s=>String(s||'').replace(/\\/g,'\\\\').replace(/([,;])/g,'\\$1').replace(/\r?\n/g,'\\n');
+  return ['BEGIN:VEVENT',`UID:${e.id}@dezessete.app`,`DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART;TZID=America/Sao_Paulo:${icsStamp(st)}`,`DTEND;TZID=America/Sao_Paulo:${icsStamp(en)}`,
+    `SUMMARY:${icsText(e.title)}`,`LOCATION:${icsText(e.loc)}`,`DESCRIPTION:${icsText(e.desc)}`,'END:VEVENT'];
+}
+function icsWrap(name,events){
   const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Dezessete//PT-BR','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    `X-WR-CALNAME:${icsText(name||'Dezessete')}`,'REFRESH-INTERVAL;VALUE=DURATION:P1D',
     'BEGIN:VTIMEZONE','TZID:America/Sao_Paulo','BEGIN:STANDARD','DTSTART:20190217T000000',
     'TZOFFSETFROM:-0300','TZOFFSETTO:-0300','TZNAME:BRT','END:STANDARD','END:VTIMEZONE',
-    'BEGIN:VEVENT',`UID:${e.id}@dezessete.app`,`DTSTAMP:${icsStamp(new Date())}`,
-    `DTSTART;TZID=America/Sao_Paulo:${icsStamp(st)}`,`DTEND;TZID=America/Sao_Paulo:${icsStamp(en)}`,
-    `SUMMARY:${cl(e.title)}`,`LOCATION:${cl(e.loc)}`,`DESCRIPTION:${cl(e.desc)}`,'END:VEVENT','END:VCALENDAR'];
-  const enc=new TextEncoder();
-  const fold=s=>{let out='',len=0;for(const ch of s){const n=enc.encode(ch).length;if(len+n>74){out+='\r\n ';len=1}out+=ch;len+=n}return out};
-  return lines.map(fold).join('\r\n');
+    ...events.flatMap(icsVEvent),'END:VCALENDAR'];
+  return lines.map(icsFold).join('\r\n');
 }
+const icsEvent=e=>icsWrap(cal()?.name,[e]);
+const icsMonth=()=>icsWrap(cal()?.name,monthEvents(S.month.y,S.month.m));
 function addToCalendar(id){
   const e=evById(id);if(!e)return;
   if(isIOS){
@@ -1796,6 +1804,12 @@ function addToCalendar(id){
     +'&location='+encodeURIComponent(e.loc||'')
     +'&ctz=America%2FSao_Paulo';
   window.open(url,'_blank','noopener');
+}
+function addMonthToCalendar(){
+  if(!monthEvents(S.month.y,S.month.m).length)return;
+  const url=URL.createObjectURL(new Blob([icsMonth()],{type:'text/calendar;charset=utf-8'}));
+  window.open(url,'_blank');
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 /* ============ share ============ */
@@ -1905,6 +1919,7 @@ $('#monthsToggle').onclick=()=>{S.monthsOpen=!S.monthsOpen;S.yearOpen=false;rend
 $('#upToggle').onclick=()=>{S.upOpen=!S.upOpen;renderUpcoming()};
 $('#yearBtn').onclick=()=>{S.yearOpen=!S.yearOpen;renderMonths()};
 $('#todayBtn').onclick=()=>{S.month={y:CY,m:CM};S.selected.clear();renderApp(true)};
+$('#addMonthBtn').onclick=()=>addMonthToCalendar();
 $$('#viewSeg button').forEach(b=>b.onclick=()=>{S.view=b.dataset.view;if(S.view==='mes')S.selected.clear();renderApp()});
 $('#sortSel').onchange=e=>{S.sort=e.target.value;renderList()};
 $('#selectAll').onchange=e=>{monthEvents(S.month.y,S.month.m).forEach(x=>e.target.checked?S.selected.add(x.id):S.selected.delete(x.id));renderList();renderBulk()};
